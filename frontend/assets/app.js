@@ -77,6 +77,12 @@ function formatNumber(value, digits = 2) {
   return Number.isFinite(n) ? n.toFixed(digits) : "0.00";
 }
 
+function formatPercent(probability, digits = 1) {
+  const n = Number(probability || 0);
+  if (!Number.isFinite(n)) return "0.0%";
+  return `${(n * 100).toFixed(digits)}%`;
+}
+
 function setStatus(text, isError = false) {
   const el = byId("statusText");
   if (!el) return;
@@ -257,7 +263,7 @@ function renderYearlyChart(summary) {
       const el = document.createElement("div");
       el.className = "year-row";
       el.innerHTML = `
-        <div><strong>${row.year}</strong> • ${formatNumber(row.problem_area_ha, 2)} га • риск ${formatNumber(row.mean_risk_score, 3)}</div>
+        <div><strong>${row.year}</strong> • ${formatNumber(row.problem_area_ha, 2)} га • риск ${formatPercent(row.mean_risk_score, 1)}</div>
         <div class="bar" style="width:${Math.max(width, 2)}%;"></div>
       `;
       chart.appendChild(el);
@@ -267,7 +273,7 @@ function renderYearlyChart(summary) {
 function setStats(summary) {
   byId("problemAreaValue").textContent = `${formatNumber(summary.total_problem_area_ha, 2)} га`;
   byId("objectsCountValue").textContent = `${summary.objects_count || 0}`;
-  byId("meanRiskValue").textContent = `${formatNumber(summary.mean_risk_score, 3)}`;
+  byId("meanRiskValue").textContent = formatPercent(summary.mean_risk_score, 1);
   renderYearlyChart(summary);
 }
 

@@ -87,7 +87,7 @@ body {
   margin: 0 auto;
   padding: 26px 0 12px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
 }
 
