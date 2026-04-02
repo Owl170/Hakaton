@@ -10,204 +10,504 @@
     href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
     rel="stylesheet"
   >
-  <link rel="stylesheet" href="/assets/styles.css?v=20260402-landing-v4">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <link rel="stylesheet" href="/assets/styles.css?v=20260402-spa-tabs-v6">
 </head>
-<body class="landing landing-v2">
-  <header class="landing-nav">
-    <div class="landing-nav__inner">
-      <nav class="landing-links">
-        <a href="#monitoring">Мониторинг</a>
-        <a href="#analytics">Аналитика</a>
-        <a href="#parcels">Участки</a>
-        <a href="#docs">Документация</a>
-        <a href="#about">О проекте</a>
+<body class="landing landing-v2 spa-page">
+  <header class="landing-nav spa-nav">
+    <div class="landing-nav__inner spa-nav__inner">
+      <a class="landing-logo spa-logo" href="#monitoring">FrostScan</a>
+      <nav class="landing-links spa-tabs" aria-label="Разделы">
+        <button type="button" class="tab-link" data-tab="monitoring">Мониторинг</button>
+        <button type="button" class="tab-link" data-tab="analytics">Аналитика</button>
+        <button type="button" class="tab-link" data-tab="parcels">Участки</button>
+        <button type="button" class="tab-link" data-tab="docs">Документация</button>
+        <button type="button" class="tab-link" data-tab="about">О проекте</button>
       </nav>
       <a class="landing-nav__cta btn-primary" href="/map">Открыть карту →</a>
     </div>
   </header>
 
-  <main class="landing-main-v2">
-    <section class="hero-v2">
-      <div class="hero-v2__left">
-        <p class="hero-pill">Permafrost Intelligence Platform</p>
-        <h1 class="hero-title">FrostScan</h1>
-        <p class="hero-subtitle">Мониторинг мерзлоты для агроземель Якутии</p>
-        <p class="hero-description">
-          Платформа объединяет спутниковые данные, геометрию участков и риск-модели в единую рабочую панель.
-          Система показывает проблемные зоны, динамику по годам и приоритеты для обследования территорий.
+  <main class="landing-main-v2 spa-main">
+    <section id="monitoring" class="tab-panel is-active" data-panel="monitoring">
+      <div class="mapdash tab-mapdash">
+        <header class="md-nav">
+          <div class="md-crumb">
+            <span class="md-logo">Мониторинг</span>
+            <span class="md-dot"></span>
+            <span id="analysisMeta">Мониторинг › Анализ №—</span>
+          </div>
+          <div class="md-actions">
+            <button class="md-btn md-btn--outline" id="refreshBtn">Обновить слои</button>
+            <button class="md-btn md-btn--primary" id="exportBtn">
+              <span class="md-dl-icon">⭳</span>
+              Скачать GeoJSON
+            </button>
+          </div>
+        </header>
+
+        <section class="md-stats">
+          <article class="md-metric">
+            <p class="md-metric__label">Площадь проблемных зон</p>
+            <strong class="md-metric__value md-danger" id="problemAreaValue">0 га</strong>
+            <span class="md-trend" id="problemAreaTrend">↑ +3.1% к 2024</span>
+          </article>
+          <article class="md-metric">
+            <p class="md-metric__label">Обнаружено объектов</p>
+            <strong class="md-metric__value" id="objectsCountValue">0</strong>
+            <span class="md-metric__sub">участков с признаками деградации</span>
+          </article>
+          <article class="md-metric">
+            <p class="md-metric__label">Средний риск</p>
+            <strong class="md-metric__value md-warn" id="meanRiskValue">0%</strong>
+            <span class="md-metric__sub">вероятность деградации по выборке</span>
+          </article>
+          <article class="md-metric md-legend-cell">
+            <p class="md-metric__label">Legend</p>
+            <div class="md-legend">
+              <span><i class="swatch swatch-red"></i>Опасный</span>
+              <span><i class="swatch swatch-amber"></i>Средний</span>
+              <span><i class="swatch swatch-green"></i>Безопасный</span>
+            </div>
+          </article>
+        </section>
+
+        <section class="md-main">
+          <aside class="md-left">
+            <article class="md-panel md-panel--filters">
+              <h3>Фильтры</h3>
+              <label for="territoryFilter">Территория</label>
+              <select id="territoryFilter">
+                <option value="">Все</option>
+              </select>
+
+              <label for="yearFilter">Год</label>
+              <select id="yearFilter">
+                <option value="">Все</option>
+              </select>
+
+              <label for="riskFilter">Уровень риска</label>
+              <select id="riskFilter">
+                <option value="">Все</option>
+                <option value="low">Безопасный</option>
+                <option value="moderate">Низкий риск</option>
+                <option value="high">Повышенный риск</option>
+                <option value="critical">Опасный</option>
+              </select>
+
+              <label for="featureFilter">Тип признака</label>
+              <select id="featureFilter">
+                <option value="">Все</option>
+                <option value="water_expansion">Расширение воды</option>
+                <option value="overwetting">Переувлажнение</option>
+                <option value="heave_mounds">Бугры пучения</option>
+                <option value="surface_texture_change">Изменение текстуры</option>
+              </select>
+            </article>
+
+            <article class="md-panel md-panel--layers">
+              <h3>Слои</h3>
+              <label class="md-toggle"><input id="toggleRisk" type="checkbox" checked>Полигоны риска</label>
+              <label class="md-toggle"><input id="toggleBoundaries" type="checkbox" checked>Границы территорий</label>
+              <label class="md-toggle"><input id="toggleTooltips" type="checkbox" checked>Подписи участков</label>
+              <label class="md-toggle"><input id="toggleOutline" type="checkbox" checked>Контуры полигонов</label>
+            </article>
+
+            <div class="md-status" id="statusText">Готово · — с</div>
+          </aside>
+
+          <div class="md-map-wrap">
+            <div id="map"></div>
+          </div>
+
+          <aside class="md-right">
+            <article class="md-panel md-panel--years">
+              <h3>Динамика по годам</h3>
+              <div id="yearlyChart" class="yearly-chart-v2"></div>
+            </article>
+
+            <article class="md-panel md-panel--feature">
+              <h3>Карточка участка</h3>
+              <div id="featureCard" class="feature-card-detail md-feature-placeholder">
+                <div class="md-hint-icon">⌖</div>
+                <p>Выберите полигон на карте для просмотра метрик участка.</p>
+              </div>
+            </article>
+          </aside>
+        </section>
+      </div>
+    </section>
+
+    <section id="analytics" class="tab-panel" data-panel="analytics">
+      <article class="content-section">
+        <h2>Анализ изменений и оценка рисков</h2>
+        <p class="content-text">
+          На основе выявленных изменений рассчитываются показатели деградации для каждой территории и земельного участка.
+          Система формирует количественные метрики и классифицирует уровень риска.
         </p>
-        <div class="hero-actions-v2">
-          <a class="hero-btn hero-btn--primary" href="/map">Запустить мониторинг</a>
-          <a class="hero-btn hero-btn--secondary" href="#analytics">Как читать результаты <span aria-hidden="true">→</span></a>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <div class="hero-stat__main">
-              <strong>147</strong>
-              <span class="hero-stat__unit">агрохозяйств</span>
-            </div>
-            <span class="hero-stat__label">агрохозяйств</span>
+        <div class="analytics-cards">
+          <div class="analytics-card">
+            <span>Общий объем изменений</span>
+            <strong>12 480 га</strong>
           </div>
-          <div class="hero-stat">
-            <div class="hero-stat__main">
-              <strong>2.3M</strong>
-              <span class="hero-stat__unit">га</span>
-            </div>
-            <span class="hero-stat__label">га охвачено</span>
+          <div class="analytics-card">
+            <span>Средний риск</span>
+            <strong>41.2%</strong>
           </div>
-          <div class="hero-stat">
-            <div class="hero-stat__main">
-              <strong>2018–25</strong>
-              <span class="hero-stat__unit">годы</span>
-            </div>
-            <span class="hero-stat__label">лет данных</span>
+          <div class="analytics-card">
+            <span>Участков в зоне внимания</span>
+            <strong>318</strong>
           </div>
         </div>
-      </div>
-
-      <div class="hero-v2__right">
-        <article class="map-widget">
-          <svg class="map-widget__grid-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-              <pattern id="coordGrid" width="8" height="8" patternUnits="userSpaceOnUse">
-                <path d="M 8 0 L 0 0 0 8" fill="none" stroke="white" stroke-width="0.25"/>
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#coordGrid)"/>
-          </svg>
-          <div class="map-poly map-poly--green"></div>
-          <div class="map-poly map-poly--amber"></div>
-          <div class="map-poly map-poly--red"></div>
-          <div class="map-pin map-pin--a">Амга</div>
-          <div class="map-pin map-pin--y">Юнкор</div>
-          <div class="map-hud">
-            <div class="map-hud__count">
-              <span>Активные зоны</span>
-              <strong>36</strong>
-            </div>
-            <div class="map-hud__legend">
-              <span><i class="dot dot--green"></i>Безопасный</span>
-              <span><i class="dot dot--amber"></i>Средний</span>
-              <span><i class="dot dot--red"></i>Опасный</span>
-            </div>
-          </div>
-        </article>
-      </div>
+        <h3 class="content-subtitle">Динамика по времени</h3>
+        <div class="bar-chart" aria-label="Динамика изменений по годам">
+          <div class="bar-item"><span>2019</span><i style="height: 26%"></i></div>
+          <div class="bar-item"><span>2020</span><i style="height: 35%"></i></div>
+          <div class="bar-item"><span>2021</span><i style="height: 48%"></i></div>
+          <div class="bar-item"><span>2022</span><i style="height: 57%"></i></div>
+          <div class="bar-item"><span>2023</span><i style="height: 69%"></i></div>
+          <div class="bar-item"><span>2024</span><i style="height: 79%"></i></div>
+          <div class="bar-item"><span>2025</span><i style="height: 88%"></i></div>
+        </div>
+      </article>
     </section>
 
-    <section class="content-section" id="monitoring">
-      <h2>Мониторинг деградации мерзлоты</h2>
-      <p class="content-text">
-        Система отслеживает изменения поверхности сельскохозяйственных земель на основе спутниковых данных.
-        Выявляются зоны, где наблюдается увеличение площади открытой воды и переувлажнение грунтов — ключевые признаки деградации многолетней мерзлоты.
-      </p>
-      <h3 class="content-subtitle">Что делает экран</h3>
-      <ul class="content-list">
-        <li>отображает карту территорий (Амга, Юнкор);</li>
-        <li>показывает зоны изменений;</li>
-        <li>позволяет сравнить состояние «раньше / сейчас».</li>
-      </ul>
+    <section id="parcels" class="tab-panel" data-panel="parcels">
+      <article class="content-section">
+        <h2>Сельскохозяйственные участки</h2>
+        <p class="content-text">
+          Раздел содержит информацию по земельным участкам, находящимся в зоне мониторинга.
+          Для каждого участка рассчитывается доля изменений и уровень риска деградации.
+        </p>
+        <div class="parcels-toolbar">
+          <input id="parcelSearch" type="search" placeholder="Поиск по участку или территории">
+        </div>
+        <div class="table-wrap">
+          <table class="parcels-table">
+            <thead>
+              <tr>
+                <th><button class="sort-btn" data-sort="id">Участок</button></th>
+                <th><button class="sort-btn" data-sort="territory">Территория</button></th>
+                <th><button class="sort-btn" data-sort="area">Площадь, га</button></th>
+                <th><button class="sort-btn" data-sort="changed">Изменения, %</button></th>
+                <th><button class="sort-btn" data-sort="risk">Риск</button></th>
+              </tr>
+            </thead>
+            <tbody id="parcelsBody"></tbody>
+          </table>
+        </div>
+      </article>
     </section>
 
-    <section class="content-section" id="analytics">
-      <h2>Анализ изменений и оценка рисков</h2>
-      <p class="content-text">
-        На основе выявленных изменений рассчитываются показатели деградации для каждой территории и земельного участка.
-        Система формирует количественные метрики и классифицирует уровень риска.
-      </p>
-      <h3 class="content-subtitle">Что показывать</h3>
-      <ul class="content-list">
-        <li>общий объем изменений (площадь);</li>
-        <li>динамика по времени;</li>
-        <li>распределение участков по уровням риска.</li>
-      </ul>
-      <p class="content-note">
-        Алгоритм анализа основан на сравнении спутниковых снимков разных лет и выделении зон устойчивых изменений.
-      </p>
+    <section id="docs" class="tab-panel" data-panel="docs">
+      <article class="content-section docs-layout">
+        <aside class="docs-sidebar">
+          <button type="button" class="docs-link is-active" data-doc-target="docs-data">Используемые данные</button>
+          <button type="button" class="docs-link" data-doc-target="docs-method">Методика</button>
+          <button type="button" class="docs-link" data-doc-target="docs-limits">Ограничения</button>
+        </aside>
+        <div class="docs-content">
+          <h2>Методика и источники данных</h2>
+          <p class="content-text">
+            Система использует спутниковые данные дистанционного зондирования Земли и методы геоинформационного анализа.
+          </p>
+
+          <section id="docs-data" class="docs-block">
+            <h3 class="content-subtitle">Используемые данные</h3>
+            <p class="content-text">
+              Система основана на анализе спутниковых данных дистанционного зондирования Земли (ДЗЗ) и геопространственных данных о землепользовании.
+            </p>
+            <p class="content-text">
+              В качестве исходной информации используются мультиспектральные спутниковые снимки, позволяющие оценивать состояние поверхности и выявлять изменения во времени. Для повышения надежности анализа используются снимки разных лет и сезонов, что позволяет отследить устойчивые изменения, а не временные аномалии.
+            </p>
+            <p class="content-text">
+              Дополнительно применяются геопространственные данные, включающие границы исследуемых территорий и сведения о земельных участках. Это позволяет не только выявлять изменения, но и привязывать их к конкретным сельскохозяйственным объектам.
+            </p>
+            <ul class="content-list">
+              <li>спутниковые снимки (Канопус-В / Sentinel-2) за разные годы;</li>
+              <li>границы территорий (Амга, Юнкор);</li>
+              <li>данные о земельных участках (кадастровая информация);</li>
+              <li>производные данные (маски изменений, зоны риска).</li>
+            </ul>
+            <p class="content-note">
+              Использование разновременных спутниковых данных позволяет выявлять долгосрочные изменения поверхности, связанные с деградацией многолетней мерзлоты.
+            </p>
+          </section>
+
+          <section id="docs-method" class="docs-block">
+            <h3 class="content-subtitle">Методика анализа</h3>
+            <p class="content-text">
+              Анализ основан на сравнении спутниковых снимков за разные периоды времени с целью выявления устойчивых изменений поверхности.
+            </p>
+            <p class="content-text">
+              На первом этапе выполняется подготовка данных: приведение снимков к единому формату, выбор сопоставимых временных периодов и устранение шумов (например, облачности). Это позволяет обеспечить корректное сравнение данных.
+            </p>
+            <p class="content-text">
+              Далее проводится вычисление индикаторов состояния поверхности, позволяющих выделить зоны открытой воды и переувлажненных грунтов — основных признаков деградации мерзлоты.
+            </p>
+            <p class="content-text">
+              На следующем этапе выполняется анализ изменений между временными срезами. Выделяются зоны, в которых наблюдается рост водных объектов или изменение структуры поверхности.
+            </p>
+            <p class="content-text">
+              Финальный этап включает пространственное сопоставление выявленных изменений с границами сельскохозяйственных участков и расчет количественных показателей.
+            </p>
+            <ul class="content-list">
+              <li>анализ временных рядов спутниковых изображений;</li>
+              <li>выделение зон изменений поверхности;</li>
+              <li>оценка площади и интенсивности изменений;</li>
+              <li>привязка изменений к земельным участкам;</li>
+              <li>расчет показателей деградации и уровня риска.</li>
+            </ul>
+            <p class="content-note">
+              Методика позволяет выявлять не только факт изменения, но и оценивать его влияние на конкретные сельскохозяйственные территории.
+            </p>
+          </section>
+
+          <section id="docs-limits" class="docs-block">
+            <h3 class="content-subtitle">Ограничения и допущения</h3>
+            <p class="content-text">
+              Анализ деградации многолетней мерзлоты основан на косвенных признаках, наблюдаемых на поверхности Земли. Система не измеряет состояние мерзлоты напрямую, а выявляет изменения, которые могут быть связаны с ее деградацией.
+            </p>
+            <p class="content-text">
+              Точность результатов зависит от качества исходных спутниковых данных, включая пространственное разрешение, атмосферные условия и сезонность съемки.
+            </p>
+            <p class="content-text">
+              Также следует учитывать, что некоторые изменения поверхности могут быть вызваны не только природными процессами, но и антропогенными факторами (например, хозяйственной деятельностью).
+            </p>
+            <p class="content-text">
+              Для повышения достоверности результатов рекомендуется проведение дополнительной валидации на местности или с использованием независимых источников данных.
+            </p>
+            <ul class="content-list">
+              <li>анализ основан на косвенных признаках (вода, влажность, изменения поверхности);</li>
+              <li>чувствительность к качеству и разрешению снимков;</li>
+              <li>влияние сезонных и погодных условий;</li>
+              <li>возможное влияние антропогенных факторов;</li>
+              <li>необходимость дополнительной проверки результатов.</li>
+            </ul>
+            <p class="content-note">
+              Система предназначена для предварительного мониторинга и выявления потенциально проблемных зон, требующих более детального анализа.
+            </p>
+          </section>
+        </div>
+      </article>
     </section>
 
-    <section class="content-section" id="parcels">
-      <h2>Сельскохозяйственные участки</h2>
-      <p class="content-text">
-        Раздел содержит информацию по земельным участкам, находящимся в зоне мониторинга.
-        Для каждого участка рассчитывается доля изменений и уровень риска деградации.
-      </p>
-      <h3 class="content-subtitle">При клике на участок</h3>
-      <div class="parcel-preview">
-        <p>Участок №{id}</p>
-        <p>Площадь: {area} га</p>
-        <p>Изменения: {pct}%</p>
-        <p>Риск: {risk}</p>
-      </div>
-      <p class="content-note">
-        Оценка риска формируется на основе доли изменившейся площади и наличия новых водных объектов.
-      </p>
-    </section>
+    <section id="about" class="tab-panel" data-panel="about">
+      <article class="content-section">
+        <h2>О проекте FrostScan</h2>
+        <p class="content-text">
+          FrostScan — это система геоинформационного мониторинга деградации многолетней мерзлоты на сельскохозяйственных землях.
+        </p>
+        <p class="content-text">
+          Проект разработан в рамках конкурса GISIT-2026 и направлен на поддержку принятия решений в условиях изменения климата.
+        </p>
+        <blockquote class="trust-quote">
+          «Обеспечить быстрый и наглядный анализ состояния территорий без необходимости выезда на место».
+        </blockquote>
+        <p class="trust-quote-author">— Команда FrostScan, GISIT-2026</p>
 
-    <section class="content-section" id="docs">
-      <h2>Методика и источники данных</h2>
-      <p class="content-text">
-        Система использует спутниковые данные дистанционного зондирования Земли и методы геоинформационного анализа.
-      </p>
+        <h3 class="content-subtitle">Целевая аудитория</h3>
+        <div class="trust-pills">
+          <span>Органы управления сельским хозяйством</span>
+          <span>Экологические службы</span>
+          <span>Фермерские хозяйства</span>
+        </div>
 
-      <h3 class="content-subtitle">Используемые данные</h3>
-      <ul class="content-list">
-        <li>спутниковые снимки (Канопус-В / Sentinel-2);</li>
-        <li>границы территорий;</li>
-        <li>данные о земельных участках.</li>
-      </ul>
-
-      <h3 class="content-subtitle">Методика</h3>
-      <ul class="content-list">
-        <li>анализ временных рядов изображений;</li>
-        <li>выделение зон изменений;</li>
-        <li>расчет показателей по участкам.</li>
-      </ul>
-
-      <h3 class="content-subtitle">Ограничения</h3>
-      <ul class="content-list">
-        <li>анализ основан на косвенных признаках;</li>
-        <li>точность зависит от качества снимков;</li>
-        <li>требуется дополнительная валидация на местности.</li>
-      </ul>
-    </section>
-
-    <section class="content-section" id="about">
-      <h2>О проекте FrostScan</h2>
-      <p class="content-text">
-        FrostScan — это система геоинформационного мониторинга деградации многолетней мерзлоты на сельскохозяйственных землях.
-      </p>
-      <p class="content-text">
-        Проект разработан в рамках конкурса GISIT-2026 и направлен на поддержку принятия решений в условиях изменения климата.
-      </p>
-
-      <h3 class="content-subtitle">Цель</h3>
-      <p class="content-text">Обеспечить быстрый и наглядный анализ состояния территорий без необходимости выезда на место.</p>
-
-      <h3 class="content-subtitle">Целевая аудитория</h3>
-      <ul class="content-list">
-        <li>органы управления сельским хозяйством;</li>
-        <li>экологические службы;</li>
-        <li>фермерские хозяйства.</li>
-      </ul>
+        <h3 class="content-subtitle">Команда проекта</h3>
+        <div class="team-cards">
+          <article class="team-card">
+            <strong>GIS Analyst</strong>
+            <p>Обработка данных ДЗЗ и картографическая верификация зон изменений.</p>
+          </article>
+          <article class="team-card">
+            <strong>ML Engineer</strong>
+            <p>Построение метрик деградации и классификации риска по участкам.</p>
+          </article>
+          <article class="team-card">
+            <strong>Product Lead</strong>
+            <p>Сценарии использования для ведомств и агропредприятий.</p>
+          </article>
+        </div>
+      </article>
     </section>
   </main>
 
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="/assets/app.js?v=20260402-mapdash-v1"></script>
   <script>
-    window.addEventListener("DOMContentLoaded", () => {
-      for (const link of document.querySelectorAll('a[href^="#"]')) {
-        link.addEventListener("click", (event) => {
-          const targetId = link.getAttribute("href");
-          if (!targetId || targetId === "#") return;
+    const TAB_IDS = ["monitoring", "analytics", "parcels", "docs", "about"];
+    const tabLinks = Array.from(document.querySelectorAll(".tab-link"));
+    const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
 
-          const target = document.querySelector(targetId);
-          if (!target) return;
+    function normalizedTab(hashValue) {
+      const raw = String(hashValue || "").replace(/^#/, "");
+      return TAB_IDS.includes(raw) ? raw : "monitoring";
+    }
 
-          event.preventDefault();
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-          history.replaceState(null, "", targetId);
-        });
+    function isKnownTabHash(hashValue) {
+      const raw = String(hashValue || "").replace(/^#/, "");
+      return TAB_IDS.includes(raw);
+    }
+
+    function activateTab(tabId) {
+      const current = normalizedTab(tabId);
+
+      tabLinks.forEach((link) => {
+        const isActive = link.dataset.tab === current;
+        link.classList.toggle("is-active", isActive);
+        link.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+
+      tabPanels.forEach((panel) => {
+        const isActive = panel.dataset.panel === current;
+        panel.classList.toggle("is-active", isActive);
+      });
+
+      if (current === "monitoring") {
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 140);
       }
+    }
+
+    tabLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        const tabId = normalizedTab(link.dataset.tab);
+        activateTab(tabId);
+        if (window.location.hash !== `#${tabId}`) window.location.hash = tabId;
+      });
+    });
+
+    window.addEventListener("hashchange", () => {
+      if (!isKnownTabHash(window.location.hash)) {
+        window.location.hash = "monitoring";
+        return;
+      }
+      activateTab(window.location.hash);
+    });
+
+    const parcelsData = [
+      { id: "A-101", territory: "Амга", area: 124.8, changed: 18.5, risk: "high" },
+      { id: "A-145", territory: "Амга", area: 96.1, changed: 9.2, risk: "moderate" },
+      { id: "A-208", territory: "Амга", area: 73.4, changed: 5.4, risk: "low" },
+      { id: "Y-014", territory: "Юнкор", area: 156.7, changed: 23.1, risk: "critical" },
+      { id: "Y-033", territory: "Юнкор", area: 88.9, changed: 14.3, risk: "high" },
+      { id: "Y-059", territory: "Юнкор", area: 112.2, changed: 7.8, risk: "moderate" },
+    ];
+
+    const riskMeta = {
+      low: { label: "Низкий", order: 1 },
+      moderate: { label: "Средний", order: 2 },
+      high: { label: "Высокий", order: 3 },
+      critical: { label: "Критический", order: 4 },
+    };
+
+    const tableState = { sortBy: "changed", direction: "desc", search: "" };
+    const parcelsBody = document.getElementById("parcelsBody");
+    const parcelSearch = document.getElementById("parcelSearch");
+    const sortButtons = Array.from(document.querySelectorAll(".sort-btn"));
+
+    function compareRows(a, b, key) {
+      if (key === "risk") return riskMeta[a.risk].order - riskMeta[b.risk].order;
+      if (key === "area" || key === "changed") return Number(a[key]) - Number(b[key]);
+      return String(a[key]).localeCompare(String(b[key]), "ru");
+    }
+
+    function filteredRows() {
+      const query = tableState.search.trim().toLowerCase();
+      if (!query) return parcelsData.slice();
+      return parcelsData.filter((row) => `${row.id} ${row.territory}`.toLowerCase().includes(query));
+    }
+
+    function renderParcels() {
+      const rows = filteredRows().sort((a, b) => compareRows(a, b, tableState.sortBy));
+      if (tableState.direction === "desc") rows.reverse();
+
+      parcelsBody.innerHTML = rows
+        .map((row) => {
+          const risk = riskMeta[row.risk];
+          return `
+            <tr>
+              <td>${row.id}</td>
+              <td>${row.territory}</td>
+              <td>${row.area.toFixed(1)}</td>
+              <td>${row.changed.toFixed(1)}</td>
+              <td><span class="risk-pill risk-${row.risk}">${risk.label}</span></td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      sortButtons.forEach((button) => {
+        const key = button.dataset.sort;
+        const isActive = key === tableState.sortBy;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("data-direction", isActive ? tableState.direction : "");
+      });
+    }
+
+    if (parcelSearch) {
+      parcelSearch.addEventListener("input", () => {
+        tableState.search = parcelSearch.value || "";
+        renderParcels();
+      });
+    }
+
+    sortButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const key = button.dataset.sort;
+        if (tableState.sortBy === key) {
+          tableState.direction = tableState.direction === "asc" ? "desc" : "asc";
+        } else {
+          tableState.sortBy = key;
+          tableState.direction = key === "id" || key === "territory" ? "asc" : "desc";
+        }
+        renderParcels();
+      });
+    });
+
+    const docsButtons = Array.from(document.querySelectorAll(".docs-link"));
+    const docsBlocks = Array.from(document.querySelectorAll(".docs-block"));
+
+    function activateDocsBlock(targetId) {
+      const currentId = ["docs-data", "docs-method", "docs-limits"].includes(targetId)
+        ? targetId
+        : "docs-data";
+
+      docsButtons.forEach((button) => {
+        const isActive = button.dataset.docTarget === currentId;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+
+      docsBlocks.forEach((block) => {
+        block.classList.toggle("is-active", block.id === currentId);
+      });
+    }
+
+    docsButtons.forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        activateDocsBlock(button.dataset.docTarget);
+      });
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const startTab = normalizedTab(window.location.hash);
+      activateTab(startTab);
+      if (!isKnownTabHash(window.location.hash)) {
+        history.replaceState(null, "", "#monitoring");
+      }
+      renderParcels();
+      activateDocsBlock("docs-data");
     });
   </script>
 </body>
