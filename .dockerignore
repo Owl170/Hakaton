@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+node_modules
+outputs
