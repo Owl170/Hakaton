@@ -8,13 +8,3 @@ __pycache__/
 venv/
 env/
 .env
-*.db
-*.sqlite
-*.sqlite3
-models/*.joblib
-outputs/geojson/*.geojson
-outputs/rasters/*.tif
-outputs/reports/*.json
-data/uploads/
-!data/uploads/.gitkeep
-*.zip

@@ -1,0 +1,61 @@
+{
+  "total_problem_area_ha": 3605954.805,
+  "objects_count": 96,
+  "mean_risk_score": 0.1528,
+  "risk_distribution": {
+    "low": 79,
+    "moderate": 16,
+    "high": 1,
+    "critical": 0
+  },
+  "yearly_dynamics": [
+    {
+      "year": 2018,
+      "problem_area_ha": 437188.65,
+      "objects_count": 12,
+      "mean_risk_score": 0.1474
+    },
+    {
+      "year": 2019,
+      "problem_area_ha": 448918.891,
+      "objects_count": 12,
+      "mean_risk_score": 0.1521
+    },
+    {
+      "year": 2020,
+      "problem_area_ha": 439073.701,
+      "objects_count": 12,
+      "mean_risk_score": 0.1495
+    },
+    {
+      "year": 2021,
+      "problem_area_ha": 447163.195,
+      "objects_count": 12,
+      "mean_risk_score": 0.1506
+    },
+    {
+      "year": 2022,
+      "problem_area_ha": 450155.459,
+      "objects_count": 12,
+      "mean_risk_score": 0.1537
+    },
+    {
+      "year": 2023,
+      "problem_area_ha": 459645.807,
+      "objects_count": 12,
+      "mean_risk_score": 0.1566
+    },
+    {
+      "year": 2024,
+      "problem_area_ha": 461305.573,
+      "objects_count": 12,
+      "mean_risk_score": 0.1563
+    },
+    {
+      "year": 2025,
+      "problem_area_ha": 462503.53,
+      "objects_count": 12,
+      "mean_risk_score": 0.1561
+    }
+  ]
+}
