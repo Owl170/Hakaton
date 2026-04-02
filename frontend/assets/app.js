@@ -29,6 +29,10 @@ async function safeJson(res) {
   }
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const state = {
   analysisId: null,
   map: null,
@@ -97,7 +101,7 @@ function setAnalysisMeta() {
     meta.textContent = `Анализ №${state.analysisId}`;
     return;
   }
-  meta.textContent = "Анализ не выбран";
+  meta.textContent = "";
 }
 
 function initMap() {
@@ -331,6 +335,22 @@ async function refreshAll() {
   await loadSummary();
 }
 
+async function waitForCompletedAnalysis(timeoutMs = 15 * 60 * 1000, pollMs = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const analyses = await api.get("/analysis/results");
+    const completed = (analyses.items || [])
+      .filter((row) => String(row.status) === "completed")
+      .sort((a, b) => Number(b.id || 0) - Number(a.id || 0))[0];
+    if (completed?.id) {
+      state.analysisId = completed.id;
+      return true;
+    }
+    await sleep(pollMs);
+  }
+  return false;
+}
+
 async function runAnalysis() {
   const territory = byId("territoryFilter")?.value || "";
   const yearValue = byId("yearFilter")?.value || "";
@@ -388,6 +408,33 @@ async function initPage() {
   try {
     setStatus("Загрузка данных...");
     state.analysisId = null;
+    const analyses = await api.get("/analysis/results");
+    const hasCompleted = (analyses.items || []).some((row) => String(row.status) === "completed");
+    if (!hasCompleted) {
+      const runningRows = (analyses.items || []).filter((row) => String(row.status) === "running");
+      const latestRunning = runningRows.sort((a, b) => Number(b.id || 0) - Number(a.id || 0))[0];
+      if (latestRunning?.id) {
+        setStatus("Ожидание завершения текущего анализа...");
+        const ok = await waitForCompletedAnalysis(6 * 60 * 1000, 5000);
+        if (ok) {
+          await refreshAll();
+          setStatus("Готово");
+          return;
+        }
+      }
+      setStatus("Новая база: выполняется первичный анализ...");
+      await api.postJson("/analysis/run", {
+        territories: null,
+        years: null,
+        force_retrain: false,
+      });
+      const ok = await waitForCompletedAnalysis(6 * 60 * 1000, 4000);
+      if (!ok) {
+        setStatus("Анализ запущен, дождитесь завершения и обновите страницу", true);
+        return;
+      }
+      setStatus("Первичный анализ завершён");
+    }
     await refreshAll();
     setStatus("Готово");
   } catch (e) {

@@ -12,6 +12,7 @@ from backend.app.routers.export import router as export_router
 from backend.app.routers.health import router as health_router
 from backend.app.routers.map import router as map_router
 from backend.app.routers.stats import router as stats_router
+from backend.app.services.analysis_service import mark_stale_running_analyses
 from backend.app.services.seed_service import ensure_seed_data
 from backend.app.services.storage_service import ensure_default_settings
 
@@ -35,6 +36,7 @@ app.mount("/assets", StaticFiles(directory=settings.FRONTEND_DIR / "assets"), na
 @app.on_event("startup")
 def startup() -> None:
     init_db()
+    mark_stale_running_analyses()
     ensure_default_settings()
     required_keys = ["active_boundaries_path", "active_parcels_csv", "active_raster_dir"]
     ready = all(get_setting(key) and Path(get_setting(key)).exists() for key in required_keys)

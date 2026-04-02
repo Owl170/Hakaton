@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -164,6 +164,32 @@ def run_analysis_job(
     except Exception as exc:
         update_analysis(analysis_id, status="failed", summary={"error": str(exc)})
         raise
+
+
+def mark_stale_running_analyses(max_age_minutes: int = 45) -> int:
+    now = datetime.now(timezone.utc)
+    updated = 0
+    for item in list_analyses():
+        if str(item.get("status")) != "running":
+            continue
+        created_raw = item.get("created_at")
+        if not created_raw:
+            continue
+        try:
+            created_at = datetime.fromisoformat(str(created_raw))
+        except ValueError:
+            continue
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        age_minutes = (now - created_at.astimezone(timezone.utc)).total_seconds() / 60.0
+        if age_minutes >= max_age_minutes:
+            update_analysis(
+                int(item["id"]),
+                status="failed",
+                summary={"error": "Run marked as stale after interruption"},
+            )
+            updated += 1
+    return updated
 
 
 def get_all_analyses() -> list[dict[str, Any]]:

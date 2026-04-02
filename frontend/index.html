@@ -7,45 +7,126 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
     rel="stylesheet"
   >
-  <link rel="stylesheet" href="/assets/styles.css">
+  <link rel="stylesheet" href="/assets/styles.css?v=20260402-landing-v2">
 </head>
-<body class="landing">
-  <div class="bg-grid"></div>
-
-  <header class="landing-header">
-    <div class="logo">FrostScan</div>
+<body class="landing landing-v2">
+  <header class="landing-nav">
+    <div class="landing-nav__inner">
+      <a class="landing-logo" href="/">FrostScan</a>
+      <nav class="landing-links">
+        <a href="/map">Мониторинг</a>
+        <a href="/map">Аналитика</a>
+        <a href="/map">Участки</a>
+        <a href="/map">Документация</a>
+        <a href="/map">О проекте</a>
+      </nav>
+      <a class="landing-nav__cta" href="/map">Открыть карту →</a>
+    </div>
   </header>
 
-  <main class="landing-main">
-    <section class="hero">
-      <p class="badge">Мониторинг мерзлоты в Якутии</p>
-      <h1>Выявление деградации многолетней мерзлоты на сельхозземлях</h1>
-      <p class="hero-text">
-        Анализ спутниковых снимков Канопус-В, геоданных и динамики водных объектов
-        с расчётом риска деградации по каждому участку.
-      </p>
-      <div class="hero-actions">
-        <a class="btn" href="/map">Перейти к анализу</a>
-        <a class="btn btn-outline" href="/health" target="_blank">Проверить API</a>
+  <main class="landing-main-v2">
+    <section class="hero-v2">
+      <div class="hero-v2__left">
+        <p class="hero-pill">Permafrost Intelligence Platform</p>
+        <h1 class="hero-title">FrostScan</h1>
+        <p class="hero-subtitle">Мониторинг деградации многолетней мерзлоты на сельскохозяйственных землях Якутии</p>
+        <p class="hero-description">
+          Платформа объединяет спутниковые данные, геометрию участков и риск-модели в единую рабочую панель.
+          Система показывает проблемные зоны, динамику по годам и приоритеты для обследования территорий.
+        </p>
+        <div class="hero-actions-v2">
+          <a class="hero-btn hero-btn--primary" href="/map">Запустить мониторинг</a>
+          <a class="hero-btn hero-btn--secondary" href="/map">Смотреть слои риска</a>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat__label">АГРОХОЗЯЙСТВ</span>
+            <strong>147</strong>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat__label">ПЛОЩАДЬ</span>
+            <strong>2.3M га</strong>
+          </div>
+          <div class="hero-stat">
+            <span class="hero-stat__label">ПЕРИОД</span>
+            <strong>2018-25</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-v2__right">
+        <article class="map-widget">
+          <div class="map-widget__grid"></div>
+          <div class="map-poly map-poly--green"></div>
+          <div class="map-poly map-poly--amber"></div>
+          <div class="map-poly map-poly--red"></div>
+          <div class="map-pin map-pin--a">Амга</div>
+          <div class="map-pin map-pin--y">Юнкор</div>
+          <div class="map-hud">
+            <div class="map-hud__count">
+              <span>Активные зоны</span>
+              <strong>36</strong>
+            </div>
+            <div class="map-hud__legend">
+              <span><i class="dot dot--green"></i>Безопасный</span>
+              <span><i class="dot dot--amber"></i>Средний</span>
+              <span><i class="dot dot--red"></i>Опасный</span>
+            </div>
+          </div>
+        </article>
       </div>
     </section>
 
-    <section class="features">
-      <article class="feature-card">
-        <h3>ML + Правила</h3>
-        <p>Детекция воды, переувлажнения, изменений текстуры и классификация риска.</p>
-      </article>
-      <article class="feature-card">
-        <h3>GIS-обработка</h3>
-        <p>Наложение границ, маскирование растра и оценка на уровне участков.</p>
-      </article>
-      <article class="feature-card">
-        <h3>Оперативная карта</h3>
-        <p>Слои, фильтры, статистика, карточка участка и экспорт GeoJSON.</p>
-      </article>
+    <section class="pipeline-v2">
+      <div class="pipeline-head">
+        <p class="pipeline-kicker">Pipeline</p>
+        <h2>Как работает система</h2>
+      </div>
+      <div class="pipeline-row">
+        <article class="pipeline-card">
+          <p class="step-label">01 DATA</p>
+          <h3>Сбор данных</h3>
+          <p>Загрузка растров, границ территорий и кадастровых участков в единую геоструктуру.</p>
+          <div class="chips">
+            <span>kanopus_2023.tif</span>
+            <span>boundaries.shp</span>
+            <span>parcels.csv</span>
+          </div>
+        </article>
+        <article class="pipeline-card">
+          <p class="step-label">02 RISK</p>
+          <h3>Выделение риска</h3>
+          <p>Расчёт индексов воды/влажности и поиск зон деградации по пиксельным маскам.</p>
+          <div class="chips">
+            <span>ndwi &gt; 0.12</span>
+            <span>wet_mask</span>
+            <span>texture_shift</span>
+          </div>
+        </article>
+        <article class="pipeline-card">
+          <p class="step-label">03 ENGINE</p>
+          <h3>Оценка модели</h3>
+          <p>Гибридный rule-based + ML scoring на уровне участков и территорий.</p>
+          <div class="chips">
+            <span>risk_score</span>
+            <span>rf_calibration</span>
+            <span>parcel_level</span>
+          </div>
+        </article>
+        <article class="pipeline-card">
+          <p class="step-label">04 OUTPUT</p>
+          <h3>Результат</h3>
+          <p>Карта слоёв риска, динамика по годам и экспорт отчётных данных.</p>
+          <div class="chips">
+            <span>GeoJSON</span>
+            <span>SQLite</span>
+            <span>Dashboard</span>
+          </div>
+        </article>
+      </div>
     </section>
   </main>
 </body>
