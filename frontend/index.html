@@ -10,20 +10,19 @@
     href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
     rel="stylesheet"
   >
-  <link rel="stylesheet" href="/assets/styles.css?v=20260402-landing-v2">
+  <link rel="stylesheet" href="/assets/styles.css?v=20260402-landing-v4">
 </head>
 <body class="landing landing-v2">
   <header class="landing-nav">
     <div class="landing-nav__inner">
-      <a class="landing-logo" href="/">FrostScan</a>
       <nav class="landing-links">
-        <a href="/map">Мониторинг</a>
-        <a href="/map">Аналитика</a>
-        <a href="/map">Участки</a>
-        <a href="/map">Документация</a>
-        <a href="/map">О проекте</a>
+        <a href="#monitoring">Мониторинг</a>
+        <a href="#analytics">Аналитика</a>
+        <a href="#parcels">Участки</a>
+        <a href="#docs">Документация</a>
+        <a href="#about">О проекте</a>
       </nav>
-      <a class="landing-nav__cta" href="/map">Открыть карту →</a>
+      <a class="landing-nav__cta btn-primary" href="/map">Открыть карту →</a>
     </div>
   </header>
 
@@ -32,34 +31,50 @@
       <div class="hero-v2__left">
         <p class="hero-pill">Permafrost Intelligence Platform</p>
         <h1 class="hero-title">FrostScan</h1>
-        <p class="hero-subtitle">Мониторинг деградации многолетней мерзлоты на сельскохозяйственных землях Якутии</p>
+        <p class="hero-subtitle">Мониторинг мерзлоты для агроземель Якутии</p>
         <p class="hero-description">
           Платформа объединяет спутниковые данные, геометрию участков и риск-модели в единую рабочую панель.
           Система показывает проблемные зоны, динамику по годам и приоритеты для обследования территорий.
         </p>
         <div class="hero-actions-v2">
           <a class="hero-btn hero-btn--primary" href="/map">Запустить мониторинг</a>
-          <a class="hero-btn hero-btn--secondary" href="/map">Смотреть слои риска</a>
+          <a class="hero-btn hero-btn--secondary" href="#analytics">Как читать результаты <span aria-hidden="true">→</span></a>
         </div>
         <div class="hero-stats">
           <div class="hero-stat">
-            <span class="hero-stat__label">АГРОХОЗЯЙСТВ</span>
-            <strong>147</strong>
+            <div class="hero-stat__main">
+              <strong>147</strong>
+              <span class="hero-stat__unit">агрохозяйств</span>
+            </div>
+            <span class="hero-stat__label">агрохозяйств</span>
           </div>
           <div class="hero-stat">
-            <span class="hero-stat__label">ПЛОЩАДЬ</span>
-            <strong>2.3M га</strong>
+            <div class="hero-stat__main">
+              <strong>2.3M</strong>
+              <span class="hero-stat__unit">га</span>
+            </div>
+            <span class="hero-stat__label">га охвачено</span>
           </div>
           <div class="hero-stat">
-            <span class="hero-stat__label">ПЕРИОД</span>
-            <strong>2018-25</strong>
+            <div class="hero-stat__main">
+              <strong>2018–25</strong>
+              <span class="hero-stat__unit">годы</span>
+            </div>
+            <span class="hero-stat__label">лет данных</span>
           </div>
         </div>
       </div>
 
       <div class="hero-v2__right">
         <article class="map-widget">
-          <div class="map-widget__grid"></div>
+          <svg class="map-widget__grid-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <pattern id="coordGrid" width="8" height="8" patternUnits="userSpaceOnUse">
+                <path d="M 8 0 L 0 0 0 8" fill="none" stroke="white" stroke-width="0.25"/>
+              </pattern>
+            </defs>
+            <rect width="100" height="100" fill="url(#coordGrid)"/>
+          </svg>
           <div class="map-poly map-poly--green"></div>
           <div class="map-poly map-poly--amber"></div>
           <div class="map-poly map-poly--red"></div>
@@ -80,54 +95,120 @@
       </div>
     </section>
 
-    <section class="pipeline-v2">
-      <div class="pipeline-head">
-        <p class="pipeline-kicker">Pipeline</p>
-        <h2>Как работает система</h2>
+    <section class="content-section" id="monitoring">
+      <h2>Мониторинг деградации мерзлоты</h2>
+      <p class="content-text">
+        Система отслеживает изменения поверхности сельскохозяйственных земель на основе спутниковых данных.
+        Выявляются зоны, где наблюдается увеличение площади открытой воды и переувлажнение грунтов — ключевые признаки деградации многолетней мерзлоты.
+      </p>
+      <h3 class="content-subtitle">Что делает экран</h3>
+      <ul class="content-list">
+        <li>отображает карту территорий (Амга, Юнкор);</li>
+        <li>показывает зоны изменений;</li>
+        <li>позволяет сравнить состояние «раньше / сейчас».</li>
+      </ul>
+    </section>
+
+    <section class="content-section" id="analytics">
+      <h2>Анализ изменений и оценка рисков</h2>
+      <p class="content-text">
+        На основе выявленных изменений рассчитываются показатели деградации для каждой территории и земельного участка.
+        Система формирует количественные метрики и классифицирует уровень риска.
+      </p>
+      <h3 class="content-subtitle">Что показывать</h3>
+      <ul class="content-list">
+        <li>общий объем изменений (площадь);</li>
+        <li>динамика по времени;</li>
+        <li>распределение участков по уровням риска.</li>
+      </ul>
+      <p class="content-note">
+        Алгоритм анализа основан на сравнении спутниковых снимков разных лет и выделении зон устойчивых изменений.
+      </p>
+    </section>
+
+    <section class="content-section" id="parcels">
+      <h2>Сельскохозяйственные участки</h2>
+      <p class="content-text">
+        Раздел содержит информацию по земельным участкам, находящимся в зоне мониторинга.
+        Для каждого участка рассчитывается доля изменений и уровень риска деградации.
+      </p>
+      <h3 class="content-subtitle">При клике на участок</h3>
+      <div class="parcel-preview">
+        <p>Участок №{id}</p>
+        <p>Площадь: {area} га</p>
+        <p>Изменения: {pct}%</p>
+        <p>Риск: {risk}</p>
       </div>
-      <div class="pipeline-row">
-        <article class="pipeline-card">
-          <p class="step-label">01 DATA</p>
-          <h3>Сбор данных</h3>
-          <p>Загрузка растров, границ территорий и кадастровых участков в единую геоструктуру.</p>
-          <div class="chips">
-            <span>kanopus_2023.tif</span>
-            <span>boundaries.shp</span>
-            <span>parcels.csv</span>
-          </div>
-        </article>
-        <article class="pipeline-card">
-          <p class="step-label">02 RISK</p>
-          <h3>Выделение риска</h3>
-          <p>Расчёт индексов воды/влажности и поиск зон деградации по пиксельным маскам.</p>
-          <div class="chips">
-            <span>ndwi &gt; 0.12</span>
-            <span>wet_mask</span>
-            <span>texture_shift</span>
-          </div>
-        </article>
-        <article class="pipeline-card">
-          <p class="step-label">03 ENGINE</p>
-          <h3>Оценка модели</h3>
-          <p>Гибридный rule-based + ML scoring на уровне участков и территорий.</p>
-          <div class="chips">
-            <span>risk_score</span>
-            <span>rf_calibration</span>
-            <span>parcel_level</span>
-          </div>
-        </article>
-        <article class="pipeline-card">
-          <p class="step-label">04 OUTPUT</p>
-          <h3>Результат</h3>
-          <p>Карта слоёв риска, динамика по годам и экспорт отчётных данных.</p>
-          <div class="chips">
-            <span>GeoJSON</span>
-            <span>SQLite</span>
-            <span>Dashboard</span>
-          </div>
-        </article>
-      </div>
+      <p class="content-note">
+        Оценка риска формируется на основе доли изменившейся площади и наличия новых водных объектов.
+      </p>
+    </section>
+
+    <section class="content-section" id="docs">
+      <h2>Методика и источники данных</h2>
+      <p class="content-text">
+        Система использует спутниковые данные дистанционного зондирования Земли и методы геоинформационного анализа.
+      </p>
+
+      <h3 class="content-subtitle">Используемые данные</h3>
+      <ul class="content-list">
+        <li>спутниковые снимки (Канопус-В / Sentinel-2);</li>
+        <li>границы территорий;</li>
+        <li>данные о земельных участках.</li>
+      </ul>
+
+      <h3 class="content-subtitle">Методика</h3>
+      <ul class="content-list">
+        <li>анализ временных рядов изображений;</li>
+        <li>выделение зон изменений;</li>
+        <li>расчет показателей по участкам.</li>
+      </ul>
+
+      <h3 class="content-subtitle">Ограничения</h3>
+      <ul class="content-list">
+        <li>анализ основан на косвенных признаках;</li>
+        <li>точность зависит от качества снимков;</li>
+        <li>требуется дополнительная валидация на местности.</li>
+      </ul>
+    </section>
+
+    <section class="content-section" id="about">
+      <h2>О проекте FrostScan</h2>
+      <p class="content-text">
+        FrostScan — это система геоинформационного мониторинга деградации многолетней мерзлоты на сельскохозяйственных землях.
+      </p>
+      <p class="content-text">
+        Проект разработан в рамках конкурса GISIT-2026 и направлен на поддержку принятия решений в условиях изменения климата.
+      </p>
+
+      <h3 class="content-subtitle">Цель</h3>
+      <p class="content-text">Обеспечить быстрый и наглядный анализ состояния территорий без необходимости выезда на место.</p>
+
+      <h3 class="content-subtitle">Целевая аудитория</h3>
+      <ul class="content-list">
+        <li>органы управления сельским хозяйством;</li>
+        <li>экологические службы;</li>
+        <li>фермерские хозяйства.</li>
+      </ul>
     </section>
   </main>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      for (const link of document.querySelectorAll('a[href^="#"]')) {
+        link.addEventListener("click", (event) => {
+          const targetId = link.getAttribute("href");
+          if (!targetId || targetId === "#") return;
+
+          const target = document.querySelector(targetId);
+          if (!target) return;
+
+          event.preventDefault();
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          history.replaceState(null, "", targetId);
+        });
+      }
+    });
+  </script>
 </body>
 </html>

@@ -1,114 +1,137 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FrostScan | Карта</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-            href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
-            rel="stylesheet"
-    >
-    <link
-            rel="stylesheet"
-            href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-            integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-            crossorigin=""
-    >
-    <link rel="stylesheet" href="/assets/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FrostScan | Карта</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+    rel="stylesheet"
+  >
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <link rel="stylesheet" href="/assets/styles.css">
 </head>
-<body>
-<div class="app-shell">
-    <aside class="sidebar">
-        <div class="sidebar-head">
-            <a class="logo-link" href="/">FrostScan</a>
+<body class="map-screen">
+  <div class="mapdash">
+    <header class="md-nav">
+      <a class="md-back-btn" href="/">← Назад</a>
+      <div class="md-crumb">
+        <a class="md-logo" href="/">FrostScan</a>
+        <span class="md-dot"></span>
+        <span id="analysisMeta">Мониторинг › Анализ №—</span>
+      </div>
+      <div class="md-actions">
+        <button class="md-btn md-btn--outline" id="refreshBtn">Обновить слои</button>
+        <button class="md-btn md-btn--primary" id="exportBtn">
+          <span class="md-dl-icon">⭳</span>
+          Скачать GeoJSON
+        </button>
+      </div>
+    </header>
+
+    <section class="md-stats">
+      <article class="md-metric">
+        <p class="md-metric__label">Площадь проблемных зон</p>
+        <strong class="md-metric__value md-danger" id="problemAreaValue">0 га</strong>
+        <span class="md-trend" id="problemAreaTrend">↑ +3.1% к 2024</span>
+      </article>
+      <article class="md-metric">
+        <p class="md-metric__label">Обнаружено объектов</p>
+        <strong class="md-metric__value" id="objectsCountValue">0</strong>
+        <span class="md-metric__sub">участков с признаками деградации</span>
+      </article>
+      <article class="md-metric">
+        <p class="md-metric__label">Средний риск</p>
+        <strong class="md-metric__value md-warn" id="meanRiskValue">0%</strong>
+        <span class="md-metric__sub">вероятность деградации по выборке</span>
+      </article>
+      <article class="md-metric md-legend-cell">
+        <p class="md-metric__label">Legend</p>
+        <div class="md-legend">
+          <span><i class="swatch swatch-red"></i>Опасный</span>
+          <span><i class="swatch swatch-amber"></i>Средний</span>
+          <span><i class="swatch swatch-green"></i>Безопасный</span>
         </div>
+      </article>
+    </section>
 
-        <section class="panel">
-            <h3>Фильтры</h3>
-            <label for="territoryFilter">Территория</label>
-            <select id="territoryFilter">
-                <option value="">Все</option>
-            </select>
+    <section class="md-main">
+      <aside class="md-left">
+        <article class="md-panel md-panel--filters">
+          <h3>Фильтры</h3>
+          <label for="territoryFilter">Территория</label>
+          <select id="territoryFilter">
+            <option value="">Все</option>
+          </select>
 
-            <label for="yearFilter">Год</label>
-            <select id="yearFilter">
-                <option value="">Все</option>
-            </select>
+          <label for="yearFilter">Год</label>
+          <select id="yearFilter">
+            <option value="">Все</option>
+          </select>
 
-            <label for="riskFilter">Уровень деградации</label>
-            <select id="riskFilter">
-                <option value="">Все</option>
-                <option value="low">Безопасный</option>
-                <option value="moderate">Низкий риск</option>
-                <option value="high">Повышенный риск</option>
-                <option value="critical">Опасный</option>
-            </select>
+          <label for="riskFilter">Уровень риска</label>
+          <select id="riskFilter">
+            <option value="">Все</option>
+            <option value="low">Безопасный</option>
+            <option value="moderate">Низкий риск</option>
+            <option value="high">Повышенный риск</option>
+            <option value="critical">Опасный</option>
+          </select>
 
-            <label for="featureFilter">Тип признака</label>
-            <select id="featureFilter">
-                <option value="">Все</option>
-                <option value="water_expansion">Расширение воды</option>
-                <option value="overwetting">Переувлажнение</option>
-                <option value="heave_mounds">Бугры пучения</option>
-                <option value="surface_texture_change">Изменение текстуры</option>
-            </select>
-        </section>
+          <label for="featureFilter">Тип признака</label>
+          <select id="featureFilter">
+            <option value="">Все</option>
+            <option value="water_expansion">Расширение воды</option>
+            <option value="overwetting">Переувлажнение</option>
+            <option value="heave_mounds">Бугры пучения</option>
+            <option value="surface_texture_change">Изменение текстуры</option>
+          </select>
+        </article>
 
-        <section class="panel">
-            <h3>Анализ</h3>
-            <button class="btn btn-outline small" id="refreshBtn">Обновить слои</button>
-            <button class="btn btn-outline small" id="exportBtn">Скачать GeoJSON</button>
-            <p id="statusText" class="status-text">Готово</p>
-        </section>
-    </aside>
+        <article class="md-panel md-panel--layers">
+          <h3>Слои</h3>
+          <label class="md-toggle"><input id="toggleRisk" type="checkbox" checked>Полигоны риска</label>
+          <label class="md-toggle"><input id="toggleBoundaries" type="checkbox" checked>Границы территорий</label>
+          <label class="md-toggle"><input id="toggleTooltips" type="checkbox" checked>Подписи участков</label>
+          <label class="md-toggle"><input id="toggleOutline" type="checkbox" checked>Контуры полигонов</label>
+        </article>
 
-    <main class="content">
-        <header class="topbar">
-            <div class="title-wrap">
-                <h1>Карта деградации многолетней мерзлоты</h1>
-                <p id="analysisMeta"></p>
-            </div>
-            <div class="stats-grid">
-                <article class="stat-card">
-                    <span>Площадь проблемных зон</span>
-                    <strong id="problemAreaValue">0 га</strong>
-                </article>
-                <article class="stat-card">
-                    <span>Обнаружено объектов</span>
-                    <strong id="objectsCountValue">0</strong>
-                </article>
-                <article class="stat-card">
-                    <span>Средний риск</span>
-                    <strong id="meanRiskValue">0</strong>
-                </article>
-            </div>
-        </header>
+        <div class="md-status" id="statusText">Готово · — с</div>
+      </aside>
 
-        <section class="workspace">
-            <div id="map"></div>
-            <div class="insights">
-                <article class="panel">
-                    <h3>Динамика по годам</h3>
-                    <div id="yearlyChart" class="yearly-chart"></div>
-                </article>
-                <article class="panel">
-                    <h3>Карточка участка</h3>
-                    <div id="featureCard" class="feature-card-detail">
-                        Нажмите на участок на карте.
-                    </div>
-                </article>
-            </div>
-        </section>
-    </main>
-</div>
+      <div class="md-map-wrap">
+        <div id="map"></div>
+      </div>
 
-<script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""
-></script>
-<script src="/assets/app.js?v=20260402-10"></script>
+      <aside class="md-right">
+        <article class="md-panel md-panel--years">
+          <h3>Динамика по годам</h3>
+          <div id="yearlyChart" class="yearly-chart-v2"></div>
+        </article>
+
+        <article class="md-panel md-panel--feature">
+          <h3>Карточка участка</h3>
+          <div id="featureCard" class="feature-card-detail md-feature-placeholder">
+            <div class="md-hint-icon">⌖</div>
+            <p>Выберите полигон на карте для просмотра метрик участка.</p>
+          </div>
+        </article>
+      </aside>
+    </section>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script src="/assets/app.js?v=20260402-mapdash-v1"></script>
 </body>
 </html>

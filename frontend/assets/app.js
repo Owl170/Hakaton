@@ -44,10 +44,10 @@ const state = {
 };
 
 const riskColors = {
-  low: "#2da44e",
-  moderate: "#c9a227",
-  high: "#e67e22",
-  critical: "#d73a49",
+  low: "#3AA87A",
+  moderate: "#E8A03A",
+  high: "#E05C3A",
+  critical: "#C94A2D",
 };
 
 const riskLabels = {
@@ -87,58 +87,70 @@ function formatPercent(probability, digits = 1) {
   return `${(n * 100).toFixed(digits)}%`;
 }
 
-function setStatus(text, isError = false) {
+function setStatus(text, isError = false, durationSec = null) {
   const el = byId("statusText");
   if (!el) return;
-  el.textContent = text;
-  el.style.color = isError ? "#b02121" : "#355174";
+  el.textContent = durationSec !== null ? `${text} · ${durationSec.toFixed(1)} с` : text;
+  el.style.color = isError ? "#E05C3A" : "#1A3A4A";
 }
 
 function setAnalysisMeta() {
   const meta = byId("analysisMeta");
   if (!meta) return;
   if (state.analysisId) {
-    meta.textContent = `Анализ №${state.analysisId}`;
+    meta.textContent = `Мониторинг › Анализ №${state.analysisId}`;
     return;
   }
-  meta.textContent = "";
+  meta.textContent = "Мониторинг › Анализ №—";
+}
+
+function renderFeaturePlaceholder() {
+  const card = byId("featureCard");
+  if (!card) return;
+  card.classList.add("md-feature-placeholder");
+  card.innerHTML = `
+    <div class="md-hint-icon">⌖</div>
+    <p>Выберите полигон на карте для просмотра метрик участка.</p>
+  `;
 }
 
 function initMap() {
   if (!byId("map")) return;
   state.map = L.map("map", { zoomControl: true }).setView([62.0, 129.9], 8);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors",
+    attribution: "&copy; OpenStreetMap",
   }).addTo(state.map);
-}
-
-function styleDetection(feature) {
-  const risk = feature.properties.risk_level || "low";
-  return {
-    color: riskColors[risk] || riskColors.low,
-    weight: 1.3,
-    fillColor: riskColors[risk] || riskColors.low,
-    fillOpacity: 0.55,
-  };
 }
 
 function styleBoundary() {
   return {
-    color: "#2f6fe3",
-    weight: 1.8,
+    color: "#2A7FAF",
+    weight: 1.2,
     fill: false,
     dashArray: "4 4",
+    opacity: 0.9,
+  };
+}
+
+function styleDetection(feature, outlineEnabled) {
+  const risk = feature.properties.risk_level || "low";
+  return {
+    color: outlineEnabled ? (riskColors[risk] || riskColors.low) : "transparent",
+    weight: outlineEnabled ? 1 : 0,
+    fillColor: riskColors[risk] || riskColors.low,
+    fillOpacity: 0.46,
   };
 }
 
 function renderFeatureCard(properties) {
   const card = byId("featureCard");
   if (!card) return;
+  card.classList.remove("md-feature-placeholder");
   const parcelId = properties.parcel_id || "Не указано";
   const territory = territoryLabel(properties.territory);
   const year = properties.year || "Не указано";
   const riskLevel = riskLabels[properties.risk_level] || (properties.risk_level || "Не указано");
-  const riskScore = formatNumber(properties.risk_score, 3);
+  const riskScore = formatPercent(properties.risk_score, 1);
   const featureType = featureLabels[properties.feature_type] || (properties.feature_type || "Не указано");
   const areaHa = formatNumber(properties.area_ha, 2);
   const water = formatNumber((properties.water_fraction || 0) * 100, 1);
@@ -149,12 +161,11 @@ function renderFeatureCard(properties) {
     <strong>${parcelId}</strong><br>
     Территория: ${territory}<br>
     Год: ${year}<br>
-    Риск: ${riskScore} (${riskLevel})<br>
+    Уровень риска: ${riskLevel}<br>
+    Вероятность: ${riskScore}<br>
     Признак: ${featureType}<br>
-    Площадь проблемной зоны: ${areaHa} га<br>
-    Вода: ${water}%<br>
-    Переувлажнение: ${wet}%<br>
-    Бугры/текстура: ${heave}%
+    Проблемная площадь: ${areaHa} га<br>
+    Вода: ${water}% · Переувлажнение: ${wet}% · Текстура: ${heave}%
   `;
 }
 
@@ -224,7 +235,7 @@ async function loadFilterOptions() {
   updateFilterOptions(territories, years);
 }
 
-function focusMapByTerritory(boundaryFC, selectedTerritory) {
+function focusMapByTerritory(boundaryFC, selectedTerritory, detectionLayer) {
   if (!state.map || !boundaryFC) return;
 
   if (selectedTerritory) {
@@ -235,49 +246,94 @@ function focusMapByTerritory(boundaryFC, selectedTerritory) {
       const targetLayer = L.geoJSON({ type: "FeatureCollection", features: targetFeatures });
       const targetBounds = targetLayer.getBounds();
       if (targetBounds.isValid()) {
-        state.map.fitBounds(targetBounds.pad(0.2));
+        state.map.fitBounds(targetBounds.pad(0.18));
         return;
       }
+    }
+  }
+
+  if (detectionLayer) {
+    const detectionBounds = detectionLayer.getBounds();
+    if (detectionBounds.isValid()) {
+      state.map.fitBounds(detectionBounds.pad(0.12));
+      return;
     }
   }
 
   const allLayer = L.geoJSON(boundaryFC);
   const allBounds = allLayer.getBounds();
   if (allBounds.isValid()) {
-    state.map.fitBounds(allBounds.pad(0.15));
+    state.map.fitBounds(allBounds.pad(0.12));
   }
+}
+
+function riskBandClass(scorePercent) {
+  if (scorePercent < 35) return "safe";
+  if (scorePercent <= 43) return "warn";
+  return "danger";
 }
 
 function renderYearlyChart(summary) {
   const chart = byId("yearlyChart");
   if (!chart) return;
-  const rows = summary.yearly_dynamics || [];
+  const rows = (summary.yearly_dynamics || []).slice().sort((a, b) => Number(a.year) - Number(b.year));
   if (!rows.length) {
-    chart.innerHTML = "<div>Нет данных</div>";
+    chart.innerHTML = "<div class='year-empty'>Нет данных</div>";
     return;
   }
 
+  const selectedYearRaw = byId("yearFilter")?.value || "";
+  const selectedYear = selectedYearRaw ? Number(selectedYearRaw) : null;
+  const currentYear = Number.isFinite(selectedYear) ? selectedYear : Number(rows[rows.length - 1].year);
   const maxArea = Math.max(...rows.map((r) => Number(r.problem_area_ha || 0)), 1);
+
   chart.innerHTML = "";
-  rows
-    .slice()
-    .sort((a, b) => Number(a.year) - Number(b.year))
-    .forEach((row) => {
-      const width = (Number(row.problem_area_ha || 0) / maxArea) * 100;
-      const el = document.createElement("div");
-      el.className = "year-row";
-      el.innerHTML = `
-        <div><strong>${row.year}</strong> • ${formatNumber(row.problem_area_ha, 2)} га • риск ${formatPercent(row.mean_risk_score, 1)}</div>
-        <div class="bar" style="width:${Math.max(width, 2)}%;"></div>
-      `;
-      chart.appendChild(el);
-    });
+  rows.forEach((row) => {
+    const riskPercent = Number(row.mean_risk_score || 0) * 100;
+    const width = (Number(row.problem_area_ha || 0) / maxArea) * 100;
+    const band = riskBandClass(riskPercent);
+    const isCurrent = Number(row.year) === Number(currentYear);
+    const item = document.createElement("div");
+    item.className = `year-row-v2 ${isCurrent ? "current" : ""}`;
+    item.innerHTML = `
+      <div class="year-row-head">
+        <span class="year-name">${isCurrent ? '<i class="current-dot"></i>' : ""}${row.year}</span>
+        <span class="year-risk">${formatPercent(row.mean_risk_score, 1)}</span>
+      </div>
+      <div class="year-bar-track">
+        <div class="year-bar-fill ${band}" style="width:${Math.max(width, 2)}%;"></div>
+      </div>
+      <div class="year-ha">${formatNumber(row.problem_area_ha, 2)} га</div>
+    `;
+    chart.appendChild(item);
+  });
+}
+
+function setProblemTrend(summary) {
+  const trendEl = byId("problemAreaTrend");
+  if (!trendEl) return;
+  const rows = (summary.yearly_dynamics || []).slice().sort((a, b) => Number(a.year) - Number(b.year));
+  trendEl.classList.remove("down");
+  if (rows.length < 2) {
+    trendEl.textContent = "↑ +0.0% к 2024";
+    return;
+  }
+
+  const last = Number(rows[rows.length - 1].problem_area_ha || 0);
+  const prev = Number(rows[rows.length - 2].problem_area_ha || 0);
+  const prevYear = rows[rows.length - 2].year;
+  const delta = prev > 0 ? ((last - prev) / prev) * 100 : 0;
+  const arrow = delta >= 0 ? "↑" : "↓";
+  const sign = delta >= 0 ? "+" : "-";
+  if (delta < 0) trendEl.classList.add("down");
+  trendEl.textContent = `${arrow} ${sign}${Math.abs(delta).toFixed(1)}% к ${prevYear}`;
 }
 
 function setStats(summary) {
   byId("problemAreaValue").textContent = `${formatNumber(summary.total_problem_area_ha, 2)} га`;
   byId("objectsCountValue").textContent = `${summary.objects_count || 0}`;
   byId("meanRiskValue").textContent = formatPercent(summary.mean_risk_score, 1);
+  setProblemTrend(summary);
   renderYearlyChart(summary);
 }
 
@@ -298,6 +354,10 @@ async function loadLayers() {
   const year = byId("yearFilter")?.value || "";
   const risk = byId("riskFilter")?.value || "";
   const feature = byId("featureFilter")?.value || "";
+  const showRisk = byId("toggleRisk")?.checked !== false;
+  const showBoundaries = byId("toggleBoundaries")?.checked !== false;
+  const showTooltips = byId("toggleTooltips")?.checked !== false;
+  const showOutline = byId("toggleOutline")?.checked !== false;
 
   if (territory) params.set("territory", territory);
   if (year) params.set("year", year);
@@ -310,23 +370,33 @@ async function loadLayers() {
   setAnalysisMeta();
 
   if (state.boundariesLayer) state.map.removeLayer(state.boundariesLayer);
-  state.boundariesLayer = L.geoJSON(data.boundaries, { style: styleBoundary }).addTo(state.map);
-
   if (state.detectionLayer) state.map.removeLayer(state.detectionLayer);
-  state.detectionLayer = L.geoJSON(data, {
-    style: styleDetection,
-    onEachFeature: (featureItem, layer) => {
-      layer.on("click", () => renderFeatureCard(featureItem.properties || {}));
-      const riskLabel = riskLabels[featureItem.properties?.risk_level] || featureItem.properties?.risk_level || "";
-      layer.bindTooltip(`${featureItem.properties?.parcel_id || "Участок"} • ${riskLabel}`);
-    },
-  }).addTo(state.map);
 
-  if (!data.features || data.features.length === 0) {
-    byId("featureCard").textContent = "Детекции не найдены по выбранным фильтрам.";
+  state.boundariesLayer = null;
+  state.detectionLayer = null;
+
+  if (showBoundaries) {
+    state.boundariesLayer = L.geoJSON(data.boundaries, { style: styleBoundary }).addTo(state.map);
   }
 
-  focusMapByTerritory(data.boundaries, territory);
+  if (showRisk) {
+    state.detectionLayer = L.geoJSON(data, {
+      style: (featureItem) => styleDetection(featureItem, showOutline),
+      onEachFeature: (featureItem, layer) => {
+        layer.on("click", () => renderFeatureCard(featureItem.properties || {}));
+        if (showTooltips) {
+          const riskLabel = riskLabels[featureItem.properties?.risk_level] || featureItem.properties?.risk_level || "";
+          layer.bindTooltip(`${featureItem.properties?.parcel_id || "Участок"} • ${riskLabel}`);
+        }
+      },
+    }).addTo(state.map);
+  }
+
+  if (!data.features || data.features.length === 0 || !showRisk) {
+    renderFeaturePlaceholder();
+  }
+
+  focusMapByTerritory(data.boundaries, territory, state.detectionLayer);
 }
 
 async function refreshAll() {
@@ -351,36 +421,13 @@ async function waitForCompletedAnalysis(timeoutMs = 15 * 60 * 1000, pollMs = 500
   return false;
 }
 
-async function runAnalysis() {
-  const territory = byId("territoryFilter")?.value || "";
-  const yearValue = byId("yearFilter")?.value || "";
-  const payload = {
-    territories: territory ? [territory] : null,
-    years: yearValue ? [Number(yearValue)] : null,
-    force_retrain: false,
-  };
-
-  setStatus("Выполняется анализ...");
-  const result = await api.postJson("/analysis/run", payload);
-  state.analysisId = null;
-  setStatus(`Анализ №${result.analysis_id} завершён`);
-  await refreshAll();
-}
-
 function bindEvents() {
-  byId("runAnalysisBtn")?.addEventListener("click", async () => {
-    try {
-      await runAnalysis();
-    } catch (e) {
-      setStatus(e.message || String(e), true);
-    }
-  });
-
   byId("refreshBtn")?.addEventListener("click", async () => {
     try {
+      const started = performance.now();
       setStatus("Обновление слоёв...");
       await refreshAll();
-      setStatus("Слои обновлены");
+      setStatus("Готово", false, (performance.now() - started) / 1000);
     } catch (e) {
       setStatus(e.message || String(e), true);
     }
@@ -393,7 +440,22 @@ function bindEvents() {
   ["territoryFilter", "yearFilter", "riskFilter", "featureFilter"].forEach((id) => {
     byId(id)?.addEventListener("change", async () => {
       try {
+        const started = performance.now();
         await loadLayers();
+        await loadSummary();
+        setStatus("Готово", false, (performance.now() - started) / 1000);
+      } catch (e) {
+        setStatus(e.message || String(e), true);
+      }
+    });
+  });
+
+  ["toggleRisk", "toggleBoundaries", "toggleTooltips", "toggleOutline"].forEach((id) => {
+    byId(id)?.addEventListener("change", async () => {
+      try {
+        const started = performance.now();
+        await loadLayers();
+        setStatus("Готово", false, (performance.now() - started) / 1000);
       } catch (e) {
         setStatus(e.message || String(e), true);
       }
@@ -405,11 +467,13 @@ async function initPage() {
   if (!byId("map")) return;
   initMap();
   bindEvents();
+  renderFeaturePlaceholder();
   try {
     setStatus("Загрузка данных...");
     state.analysisId = null;
     const analyses = await api.get("/analysis/results");
     const hasCompleted = (analyses.items || []).some((row) => String(row.status) === "completed");
+
     if (!hasCompleted) {
       const runningRows = (analyses.items || []).filter((row) => String(row.status) === "running");
       const latestRunning = runningRows.sort((a, b) => Number(b.id || 0) - Number(a.id || 0))[0];
@@ -417,8 +481,9 @@ async function initPage() {
         setStatus("Ожидание завершения текущего анализа...");
         const ok = await waitForCompletedAnalysis(6 * 60 * 1000, 5000);
         if (ok) {
+          const started = performance.now();
           await refreshAll();
-          setStatus("Готово");
+          setStatus("Готово", false, (performance.now() - started) / 1000);
           return;
         }
       }
@@ -433,10 +498,11 @@ async function initPage() {
         setStatus("Анализ запущен, дождитесь завершения и обновите страницу", true);
         return;
       }
-      setStatus("Первичный анализ завершён");
     }
+
+    const started = performance.now();
     await refreshAll();
-    setStatus("Готово");
+    setStatus("Готово", false, (performance.now() - started) / 1000);
   } catch (e) {
     setStatus(e.message || String(e), true);
   }
