@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Sora:wght@500;600;700&display=swap"
     rel="stylesheet"
   >
   <link
@@ -16,7 +16,7 @@
     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""
   >
-  <link rel="stylesheet" href="/assets/styles.css?v=20260402-spa-tabs-v6">
+  <link rel="stylesheet" href="/assets/styles.css?v=20260402-orbital-atlas-v1">
 </head>
 <body class="landing landing-v2 spa-page">
   <header class="landing-nav spa-nav">
@@ -36,6 +36,54 @@
   </header>
 
   <main class="landing-main-v2 spa-main">
+    <section class="atlas-command" aria-label="Orbital Atlas Command Center">
+      <div class="atlas-command__grid">
+        <div class="atlas-copy">
+          <p class="atlas-kicker">ORBITAL ATLAS / GEOSPATIAL INTELLIGENCE</p>
+          <h1 class="atlas-title">Territory Intelligence in Live Layers</h1>
+          <p class="atlas-lead">
+            FrostScan transforms raster signals into actionable geo-intelligence with layer-based monitoring,
+            risk scoring and operational context for every mapped parcel.
+          </p>
+          <div class="atlas-actions">
+            <a class="hero-btn hero-btn--primary" href="#monitoring">Open Command View</a>
+            <a class="hero-btn hero-btn--secondary" href="#analytics">Signal Timeline</a>
+          </div>
+        </div>
+
+        <div class="atlas-stage" aria-hidden="true">
+          <div class="atlas-grid"></div>
+          <div class="atlas-contour atlas-contour--a"></div>
+          <div class="atlas-contour atlas-contour--b"></div>
+          <div class="atlas-heat atlas-heat--low"></div>
+          <div class="atlas-heat atlas-heat--high"></div>
+          <div class="atlas-marker atlas-marker--one">61.94N / 130.11E</div>
+          <div class="atlas-marker atlas-marker--two">RISK HOTSPOT</div>
+          <div class="atlas-marker atlas-marker--three">AMPLITUDE +12.7%</div>
+          <div class="atlas-legend">
+            <span><i class="dot dot--safe"></i>SAFE</span>
+            <span><i class="dot dot--warn"></i>WATCH</span>
+            <span><i class="dot dot--danger"></i>CRITICAL</span>
+          </div>
+        </div>
+
+        <aside class="atlas-meta">
+          <article class="atlas-chip">
+            <span class="atlas-chip__label">ACTIVE TERRITORIES</span>
+            <strong class="atlas-chip__value">02</strong>
+          </article>
+          <article class="atlas-chip">
+            <span class="atlas-chip__label">LATEST DELTA</span>
+            <strong class="atlas-chip__value">+18.4%</strong>
+          </article>
+          <article class="atlas-chip">
+            <span class="atlas-chip__label">SATELLITE WINDOWS</span>
+            <strong class="atlas-chip__value">08</strong>
+          </article>
+        </aside>
+      </div>
+    </section>
+
     <section id="monitoring" class="tab-panel is-active" data-panel="monitoring">
       <div class="mapdash tab-mapdash">
         <header class="md-nav">
