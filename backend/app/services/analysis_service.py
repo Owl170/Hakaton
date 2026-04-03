@@ -1,14 +1,16 @@
 import json
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
-from shapely.geometry import mapping
+from shapely.geometry import mapping, shape
 
 from backend.app.config import settings
 from backend.app.database import (
     get_analysis,
+    get_setting,
     insert_analysis,
     insert_detections,
     list_analyses,
@@ -25,13 +27,113 @@ from ml.predict import run_prediction_pipeline
 from ml.train import train_model
 
 
+def _normalize_data_path(path_value: str | None) -> str:
+    if not path_value:
+        return ""
+    try:
+        return str(Path(path_value).resolve())
+    except Exception:
+        return str(path_value)
+
+
+def _active_dataset_meta() -> dict[str, str]:
+    boundaries = get_setting("active_boundaries_path") or str(settings.DATA_SEED_DIR / "boundaries" / "territories.geojson")
+    parcels = get_setting("active_parcels_csv") or str(settings.DATA_SEED_DIR / "parcels.csv")
+    raster_dir = get_setting("active_raster_dir") or str(settings.DATA_SEED_DIR / "rasters")
+    return {
+        "boundaries_path": _normalize_data_path(boundaries),
+        "parcels_csv_path": _normalize_data_path(parcels),
+        "raster_dir": _normalize_data_path(raster_dir),
+    }
+
+
+def _active_data_signature() -> str:
+    payload = json.dumps(_active_dataset_meta(), ensure_ascii=True, sort_keys=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _analysis_data_signature(item: dict[str, Any]) -> str | None:
+    summary = item.get("summary")
+    if not isinstance(summary, dict):
+        return None
+    signature = summary.get("data_signature")
+    if not signature:
+        return None
+    return str(signature)
+
+
+def _analysis_intersects_boundaries(
+    analysis_id: int,
+    boundaries_union,
+    boundary_bounds: tuple[float, float, float, float] | None,
+) -> bool:
+    rows = list_detections(analysis_id)
+    if not rows:
+        return False
+
+    if boundary_bounds is not None:
+        bminx, bminy, bmaxx, bmaxy = boundary_bounds
+    else:
+        bminx = bminy = bmaxx = bmaxy = None
+
+    for row in rows:
+        try:
+            geom = shape(json.loads(row["geometry_json"]))
+        except Exception:
+            continue
+        if geom is None or geom.is_empty:
+            continue
+
+        if boundary_bounds is not None:
+            gminx, gminy, gmaxx, gmaxy = geom.bounds
+            if gmaxx < bminx or gminx > bmaxx or gmaxy < bminy or gminy > bmaxy:
+                continue
+
+        try:
+            if geom.intersects(boundaries_union):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _compatible_completed_analyses(boundaries: gpd.GeoDataFrame | None = None) -> list[dict[str, Any]]:
+    completed = [a for a in list_analyses() if str(a.get("status")) == "completed"]
+    if not completed:
+        return []
+
+    active_signature = _active_data_signature()
+    boundaries_gdf = boundaries if boundaries is not None else load_boundaries_gdf()
+    if boundaries_gdf.empty:
+        return completed
+
+    boundary_bounds = tuple(float(v) for v in boundaries_gdf.total_bounds.tolist())
+    if hasattr(boundaries_gdf.geometry, "union_all"):
+        boundaries_union = boundaries_gdf.geometry.union_all()
+    else:
+        boundaries_union = boundaries_gdf.geometry.unary_union
+
+    compatible: list[dict[str, Any]] = []
+    for item in completed:
+        item_id = int(item.get("id", 0))
+        signature = _analysis_data_signature(item)
+        if signature is not None:
+            if signature == active_signature:
+                compatible.append(item)
+            continue
+        if _analysis_intersects_boundaries(item_id, boundaries_union, boundary_bounds):
+            compatible.append(item)
+    return compatible
+
+
 def _choose_default_analysis_id(
     available_territories: list[str] | None = None,
     available_years: list[int] | None = None,
     preferred_territory: str | None = None,
     preferred_year: int | None = None,
+    boundaries: gpd.GeoDataFrame | None = None,
 ) -> int | None:
-    completed = [a for a in list_analyses() if str(a.get("status")) == "completed"]
+    completed = _compatible_completed_analyses(boundaries=boundaries)
     if not completed:
         return None
 
@@ -65,8 +167,9 @@ def _choose_default_analysis_id(
 def _rank_completed_analysis_ids(
     preferred_territory: str | None = None,
     preferred_year: int | None = None,
+    boundaries: gpd.GeoDataFrame | None = None,
 ) -> list[int]:
-    completed = [a for a in list_analyses() if str(a.get("status")) == "completed"]
+    completed = _compatible_completed_analyses(boundaries=boundaries)
     if not completed:
         return []
     preferred_territory_norm = str(preferred_territory) if preferred_territory else None
@@ -150,6 +253,8 @@ def run_analysis_job(
         summary["analysis_id"] = analysis_id
         summary["years"] = selected_years
         summary["territories"] = selected_territories
+        summary["data_signature"] = _active_data_signature()
+        summary["data_sources"] = _active_dataset_meta()
         update_analysis(
             analysis_id,
             status="completed",
@@ -193,7 +298,18 @@ def mark_stale_running_analyses(max_age_minutes: int = 45) -> int:
 
 
 def get_all_analyses() -> list[dict[str, Any]]:
-    return list_analyses()
+    analyses = list_analyses()
+    boundaries = load_boundaries_gdf()
+    compatible_ids = {int(item["id"]) for item in _compatible_completed_analyses(boundaries=boundaries)}
+    filtered: list[dict[str, Any]] = []
+    for item in analyses:
+        if str(item.get("status")) != "completed":
+            filtered.append(item)
+            continue
+        item_id = int(item.get("id", 0))
+        if item_id in compatible_ids:
+            filtered.append(item)
+    return filtered
 
 
 def get_analysis_detail(analysis_id: int) -> dict[str, Any]:
@@ -237,6 +353,7 @@ def get_map_layers(
         available_years,
         preferred_territory=territory,
         preferred_year=year,
+        boundaries=boundaries,
     )
     boundary_features = [
         {
@@ -265,7 +382,11 @@ def get_map_layers(
     )
 
     if auto_select and not detections:
-        for candidate_id in _rank_completed_analysis_ids(preferred_territory=territory, preferred_year=year):
+        for candidate_id in _rank_completed_analysis_ids(
+            preferred_territory=territory,
+            preferred_year=year,
+            boundaries=boundaries,
+        ):
             if candidate_id == target_id:
                 continue
             candidate_rows = list_detections(
@@ -314,7 +435,11 @@ def get_summary(analysis_id: int | None = None) -> dict[str, Any]:
     boundaries = load_boundaries_gdf()
     available_years = sorted(collect_rasters_by_year().keys())
     available_territories = sorted(boundaries["territory"].astype(str).unique().tolist())
-    target_id = analysis_id or _choose_default_analysis_id(available_territories, available_years)
+    target_id = analysis_id or _choose_default_analysis_id(
+        available_territories,
+        available_years,
+        boundaries=boundaries,
+    )
     if target_id is None:
         return {
             "analysis_id": None,
@@ -336,7 +461,11 @@ def export_geojson_path(analysis_id: int | None = None) -> Path:
     boundaries = load_boundaries_gdf()
     available_years = sorted(collect_rasters_by_year().keys())
     available_territories = sorted(boundaries["territory"].astype(str).unique().tolist())
-    target_id = analysis_id or _choose_default_analysis_id(available_territories, available_years)
+    target_id = analysis_id or _choose_default_analysis_id(
+        available_territories,
+        available_years,
+        boundaries=boundaries,
+    )
     if target_id is None:
         raise ValueError("No completed analysis found")
     analysis = get_analysis(target_id)
