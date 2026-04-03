@@ -52,8 +52,8 @@ const riskColors = {
 
 const riskLabels = {
     low: "Безопасный",
-    moderate: "Низкий риск",
-    high: "Повышенный риск",
+    moderate: "Средний риск",
+    high: "Высокий риск",
     critical: "Опасный",
 };
 
@@ -203,10 +203,7 @@ function updateFilterOptions(territories, years) {
 
 async function loadFilterOptions() {
     const reqId = ++state.filtersReqId;
-    const [baseData, analyses] = await Promise.all([
-        api.get("/map/layers"),
-        api.get("/analysis/results"),
-    ]);
+    const baseData = await api.get("/map/layers");
     if (reqId !== state.filtersReqId) return;
 
     if (baseData.analysis_id) state.analysisId = baseData.analysis_id;
@@ -224,13 +221,6 @@ async function loadFilterOptions() {
         if (f.properties?.year !== undefined && f.properties?.year !== null) years.add(Number(f.properties.year));
     });
     (baseData.available_years || []).forEach((year) => years.add(Number(year)));
-
-    (analyses.items || [])
-        .filter((row) => String(row.status) === "completed")
-        .forEach((row) => {
-            (row.years || []).forEach((year) => years.add(Number(year)));
-            (row.territories || []).forEach((territory) => territories.add(territory));
-        });
 
     updateFilterOptions(territories, years);
 }

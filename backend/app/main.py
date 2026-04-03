@@ -37,6 +37,7 @@ app.mount("/assets", StaticFiles(directory=settings.FRONTEND_DIR / "assets"), na
 def startup() -> None:
     init_db()
     mark_stale_running_analyses()
+    ensure_seed_data()
     ensure_default_settings()
     required_keys = ["active_boundaries_path", "active_parcels_csv", "active_raster_dir"]
     ready = all(get_setting(key) and Path(get_setting(key)).exists() for key in required_keys)

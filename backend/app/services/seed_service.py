@@ -10,6 +10,47 @@ from shapely.geometry import Polygon
 from backend.app.config import settings
 
 
+def _seed_territory_polygons() -> dict[str, Polygon]:
+    # Approximate envelopes around the real settlements.
+    amga = Polygon(
+        [
+            (131.781939, 60.985284),
+            (132.217637, 60.985284),
+            (132.217637, 60.841198),
+            (131.781939, 60.841198),
+        ]
+    )
+    yunkor = Polygon(
+        [
+            (120.068611, 60.520207),
+            (120.452440, 60.520207),
+            (120.452440, 60.287948),
+            (120.068611, 60.287948),
+        ]
+    )
+    return {"Amga": amga, "Yunkor": yunkor}
+
+
+def _is_legacy_seed_layout() -> bool:
+    path = _seed_boundaries_path()
+    if not path.exists():
+        return False
+    try:
+        gdf = gpd.read_file(path)
+        if gdf.empty:
+            return True
+        if gdf.crs is None:
+            gdf = gdf.set_crs(4326)
+        else:
+            gdf = gdf.to_crs(4326)
+        bounds = tuple(float(v) for v in gdf.total_bounds.tolist())
+        minx, miny, maxx, maxy = bounds
+        is_old_extent = (128.5 <= minx <= 129.5) and (130.2 <= maxx <= 130.9) and (61.5 <= miny <= 61.9) and (62.2 <= maxy <= 62.6)
+        return is_old_extent
+    except Exception:
+        return True
+
+
 def _seed_boundaries_path() -> Path:
     return settings.DATA_SEED_DIR / "boundaries" / "territories.geojson"
 
@@ -30,7 +71,7 @@ def is_seed_ready() -> bool:
 
 
 def ensure_seed_data() -> None:
-    if is_seed_ready():
+    if is_seed_ready() and not _is_legacy_seed_layout():
         return
 
     boundaries_dir = settings.DATA_SEED_DIR / "boundaries"
@@ -38,22 +79,9 @@ def ensure_seed_data() -> None:
     boundaries_dir.mkdir(parents=True, exist_ok=True)
     rasters_dir.mkdir(parents=True, exist_ok=True)
 
-    amga = Polygon(
-        [
-            (129.00, 62.35),
-            (129.80, 62.35),
-            (129.80, 61.70),
-            (129.00, 61.70),
-        ]
-    )
-    yunkor = Polygon(
-        [
-            (129.85, 62.40),
-            (130.65, 62.40),
-            (130.65, 61.75),
-            (129.85, 61.75),
-        ]
-    )
+    territory_polygons = _seed_territory_polygons()
+    amga = territory_polygons["Amga"]
+    yunkor = territory_polygons["Yunkor"]
 
     boundaries = gpd.GeoDataFrame(
         [{"territory": "Amga", "geometry": amga}, {"territory": "Yunkor", "geometry": yunkor}],
@@ -103,7 +131,15 @@ def ensure_seed_data() -> None:
     parcels_df["area_ha"] = parcels_gdf["area_ha"].round(2)
     parcels_df.to_csv(_seed_parcels_path(), index=False)
 
-    raster_bounds = (128.90, 61.55, 130.75, 62.50)
+    minx, miny, maxx, maxy = boundaries.total_bounds
+    pad_x = max((maxx - minx) * 0.08, 0.25)
+    pad_y = max((maxy - miny) * 0.12, 0.15)
+    raster_bounds = (
+        float(minx - pad_x),
+        float(miny - pad_y),
+        float(maxx + pad_x),
+        float(maxy + pad_y),
+    )
     for year in range(2018, 2026):
         _generate_synthetic_raster(rasters_dir / f"kanopus_{year}.tif", year, raster_bounds)
 

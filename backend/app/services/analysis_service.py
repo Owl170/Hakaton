@@ -126,6 +126,19 @@ def _compatible_completed_analyses(boundaries: gpd.GeoDataFrame | None = None) -
     return compatible
 
 
+def _analysis_years(analysis: dict[str, Any] | None) -> list[int]:
+    if not isinstance(analysis, dict):
+        return []
+    years_raw = analysis.get("years", [])
+    years: list[int] = []
+    for value in years_raw:
+        try:
+            years.append(int(value))
+        except (TypeError, ValueError):
+            continue
+    return sorted(set(years))
+
+
 def _choose_default_analysis_id(
     available_territories: list[str] | None = None,
     available_years: list[int] | None = None,
@@ -346,11 +359,12 @@ def get_map_layers(
 ) -> dict[str, Any]:
     auto_select = analysis_id is None
     boundaries = load_boundaries_gdf()
-    available_years = sorted(collect_rasters_by_year().keys())
+    all_raster_years = sorted(collect_rasters_by_year().keys())
+    available_years = all_raster_years
     available_territories = sorted(boundaries["territory"].astype(str).unique().tolist())
     target_id = analysis_id or _choose_default_analysis_id(
         available_territories,
-        available_years,
+        all_raster_years,
         preferred_territory=territory,
         preferred_year=year,
         boundaries=boundaries,
@@ -373,15 +387,39 @@ def get_map_layers(
             "available_territories": available_territories,
         }
 
-    detections = list_detections(
-        target_id,
-        territory=territory,
-        year=year,
-        risk_level=risk_level,
-        feature_type=feature_type,
+    has_active_filters = any(
+        [
+            bool(territory),
+            year is not None,
+            bool(risk_level),
+            bool(feature_type),
+        ]
     )
 
-    if auto_select and not detections:
+    analysis = get_analysis(target_id)
+    if analysis is not None:
+        all_rows = list_detections(target_id)
+        years_from_rows = sorted({int(row["year"]) for row in all_rows})
+        if years_from_rows:
+            available_years = years_from_rows
+        analysis_years = _analysis_years(analysis)
+        if analysis_years and not available_years:
+            available_years = analysis_years
+    else:
+        all_rows = list_detections(target_id)
+
+    if has_active_filters:
+        detections = list_detections(
+            target_id,
+            territory=territory,
+            year=year,
+            risk_level=risk_level,
+            feature_type=feature_type,
+        )
+    else:
+        detections = all_rows
+
+    if auto_select and not has_active_filters and not detections:
         for candidate_id in _rank_completed_analysis_ids(
             preferred_territory=territory,
             preferred_year=year,

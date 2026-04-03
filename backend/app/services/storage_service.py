@@ -18,6 +18,28 @@ TERRITORY_ALIASES = {
 }
 
 
+def _fallback_territory_polygon(territory: str) -> Polygon | None:
+    if territory == "Amga":
+        return Polygon(
+            [
+                (131.781939, 60.985284),
+                (132.217637, 60.985284),
+                (132.217637, 60.841198),
+                (131.781939, 60.841198),
+            ]
+        )
+    if territory == "Yunkor":
+        return Polygon(
+            [
+                (120.068611, 60.520207),
+                (120.452440, 60.520207),
+                (120.452440, 60.287948),
+                (120.068611, 60.287948),
+            ]
+        )
+    return None
+
+
 def _path_is_valid(path_value: str | None) -> bool:
     if not path_value:
         return False
@@ -145,9 +167,15 @@ def _generate_external_boundaries() -> Path | None:
                 geoms.extend([geom for geom in gdf.geometry if geom is not None and not geom.is_empty])
             except Exception:
                 continue
-        if not geoms:
-            continue
-        union_geom = gpd.GeoSeries(geoms, crs=4326).union_all()
+
+        if geoms:
+            union_geom = gpd.GeoSeries(geoms, crs=4326).union_all()
+        else:
+            union_geom = None
+
+        if union_geom is None or union_geom.is_empty:
+            union_geom = _fallback_territory_polygon(territory)
+
         if union_geom is None or union_geom.is_empty:
             continue
         features.append({"territory": territory, "geometry": union_geom.buffer(0)})
